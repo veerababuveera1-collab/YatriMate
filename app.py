@@ -102,7 +102,7 @@ def get_gemini_model():
     if not api_key:
         return None
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel('models/gemini-1.5-flash')
+    return genai.GenerativeModel('models/gemini-1.5-flash-latest')
 
 def agent_task(model, prompt):
     try:
