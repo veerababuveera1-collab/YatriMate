@@ -1,185 +1,114 @@
 import streamlit as st
 import google.generativeai as genai
+import base64
 
 # --- 1. SYSTEM CONFIGURATION ---
 st.set_page_config(
-    page_title="YatriMate AI - Premium Travel Planner",
-    page_icon="🚩",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="YatriMate AI - Festive Travel Planner",
+    page_icon="🎈",
+    layout="wide"
 )
 
-# --- 2. THE CINEMATIC UI STYLING (The "Magic" is here) ---
+# --- 2. THE ULTIMATE VISUAL & AUDIO EXPERIENCE ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-    * { font-family: 'Inter', sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@400;900&display=swap');
     
     .stApp {
-        /* High-Definition Cinematic Background */
-        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.85)), 
-                    url("https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=2074");
+        background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), 
+                    url("https://images.unsplash.com/photo-1530789253388-582c481c54b0?q=80&w=2070");
         background-size: cover;
-        background-position: center;
         background-attachment: fixed;
     }
-    
-    .hero-title {
-        color: #FFFFFF !important;
-        text-align: center;
-        font-size: 4rem !important;
-        font-weight: 900;
-        margin-bottom: 5px;
-        letter-spacing: -2px;
-        text-shadow: 0 10px 30px rgba(0,0,0,0.8);
-    }
-    .sub-title {
-        color: #FF9933 !important;
-        text-align: center;
-        font-size: 1.4rem;
-        margin-bottom: 45px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-    }
-    
-    /* Modern Glassmorphism Cards */
-    .dest-card {
-        background: rgba(0, 0, 0, 0.6);
-        border-radius: 25px;
-        overflow: hidden;
-        border: 1px solid rgba(255, 153, 51, 0.3);
-        backdrop-filter: blur(10px);
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        height: 290px;
-        display: flex;
-        flex-direction: column;
-        margin-bottom: 30px;
-    }
-    .dest-card:hover {
-        transform: translateY(-15px) rotate(1deg);
-        border-color: #FF9933;
-        box-shadow: 0 25px 50px rgba(255, 153, 51, 0.2);
-    }
-    .img-container {
-        width: 100%;
-        height: 200px;
-    }
-    .dest-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    .dest-label {
-        padding: 18px;
-        color: white;
-        font-weight: 800;
-        text-align: center;
-        background: linear-gradient(to right, #000, #1a1a1a);
-        font-size: 1.1rem;
-        letter-spacing: 1px;
+
+    /* Balloons Animation Layer */
+    .balloon-container {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none;
+        z-index: 9999;
     }
 
-    /* Premium Button Style */
-    div.stButton > button {
-        background: linear-gradient(90deg, #FF9933 0%, #FF5500 100%) !important;
-        color: white !important;
-        width: 100%;
-        border-radius: 18px !important;
-        height: 65px;
-        font-weight: 900;
-        font-size: 1.3rem;
-        border: none;
-        transition: 0.4s;
-        box-shadow: 0 10px 25px rgba(255, 85, 0, 0.4);
+    .hero-title {
+        font-family: 'Syncopate', sans-serif;
+        color: #FFFFFF;
+        text-align: center;
+        font-size: 4rem;
+        text-shadow: 0 0 20px rgba(255,153,51,0.5);
     }
-    div.stButton > button:hover {
-        transform: scale(1.02);
-        box-shadow: 0 15px 35px rgba(255, 85, 0, 0.6);
+
+    /* Glassmorphism Cards */
+    .dest-card {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
+        padding: 10px;
+        transition: 0.3s;
+    }
+    .dest-card:hover {
+        transform: scale(1.05);
+        background: rgba(255, 255, 255, 0.2);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. AI ENGINE ---
-def generate_travel_plan(query, lang):
+# --- 3. BACKGROUND MUSIC (Auto-play enabled) ---
+# Note: Most browsers block autoplay until the user interacts with the page.
+music_html = """
+    <audio autoplay loop id="bg-music">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+    <script>
+        var audio = document.getElementById("bg-music");
+        audio.volume = 0.2; // Setting volume to low (20%)
+    </script>
+"""
+st.markdown(music_html, unsafe_allow_html=True)
+
+# --- 4. BALLOONS TRIGGER ---
+# Streamlit has a built-in balloon command!
+if st.button("🎈 Celebrate Your Journey! 🎈"):
+    st.balloons()
+
+# --- 5. AI ENGINE ---
+def generate_travel_plan(query):
     api_key = st.secrets.get("GOOGLE_API_KEY")
-    if not api_key: return "Setup Error: Google API Key missing."
+    if not api_key: return "API Key missing."
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel('gemini-1.5-flash')
-    response = model.generate_content(f"Create a detailed and professional travel plan for {query} in {lang}. Include daily highlights, hidden gems, and cost breakdown.")
-    return response.text
+    return model.generate_content(f"Plan a trip for {query} in Telugu and English.").text
 
-if 'itinerary_data' not in st.session_state:
-    st.session_state.itinerary_data = None
+# --- 6. MAIN UI ---
+st.markdown('<h1 class="hero-title">YATRIMATE AI</h1>', unsafe_allow_html=True)
+st.write("<p style='text-align:center; color:#FF9933;'>Enjoy the music and plan your dream trip!</p>", unsafe_allow_html=True)
 
-# --- 4. HERO SECTION ---
-st.markdown('<h1 class="hero-title">🚩 YatriMate AI</h1>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">మీ ప్రయాణ అనుభవాన్ని మార్చే సరికొత్త AI ప్లానర్</p>', unsafe_allow_html=True)
+user_query = st.text_input("", placeholder="మీ ప్రయాణ గమ్యాన్ని టైప్ చేయండి...")
 
-# --- 5. SEARCH AREA ---
-c1, c2, c3 = st.columns([1, 2, 1])
-with c2:
-    user_query = st.text_input("", placeholder="ఎక్కడికి వెళ్లాలనుకుంటున్నారు? (ఉదా: 4 days trip to Switzerland...)")
-    generate = st.button("Explore Now 🚀")
+if st.button("Generate Plan 🚀"):
+    with st.spinner("Creating Magic..."):
+        result = generate_travel_plan(user_query)
+        st.balloons() # Automatically fire balloons when plan is ready
+        st.markdown(f'<div style="background:white; color:black; padding:30px; border-radius:20px;">{result}</div>', unsafe_allow_html=True)
 
-# --- 6. POPULAR DESTINATIONS (Maldives & Manali included) ---
-if not st.session_state.itinerary_data:
-    st.markdown("<h2 style='text-align: center; color: white; margin-top: 35px; font-weight: 800;'>📍 Top Trending Destinations</h2>", unsafe_allow_html=True)
-    
-    dests = [
-        {"name": "Paris", "url": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=500"},
-        {"name": "Dubai", "url": "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=500"},
-        {"name": "Bali", "url": "https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=500"},
-        {"name": "Switzerland", "url": "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?q=80&w=500"},
-        {"name": "Maldives", "url": "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?q=80&w=500"},
-        {"name": "Manali", "url": "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?q=80&w=500"},
-        {"name": "Jaipur", "url": "https://images.unsplash.com/photo-1477587458883-47145ed94245?q=80&w=500"},
-        {"name": "Goa", "url": "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?q=80&w=500"}
-    ]
+# --- 7. DESTINATIONS ---
+st.markdown("### 📍 Popular Picks")
+dests = [
+    {"name": "Maldives", "url": "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?q=80&w=400"},
+    {"name": "Switzerland", "url": "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?q=80&w=400"},
+    {"name": "Paris", "url": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=400"},
+    {"name": "Manali", "url": "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?q=80&w=400"}
+]
 
-    for i in range(0, 8, 4):
-        cols = st.columns(4)
-        for j in range(4):
-            idx = i + j
-            if idx < 8:
-                with cols[j]:
-                    st.markdown(f"""
-                        <div class="dest-card">
-                            <div class="img-container">
-                                <img src="{dests[idx]['url']}" class="dest-img" 
-                                     onerror="this.onerror=null;this.src='https://via.placeholder.com/400x200/111/FF9933?text={dests[idx]['name']}';">
-                            </div>
-                            <div class="dest-label">{dests[idx]['name']}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-
-# --- 7. RESULT INTERFACE ---
-if generate and user_query:
-    with st.status("🛠️ Creating your personal roadmap...", expanded=False):
-        st.session_state.itinerary_data = generate_travel_plan(user_query, "Telugu & English Mix")
-        st.rerun()
-
-if st.session_state.itinerary_data:
-    st.markdown(f'<div style="background:rgba(255,255,255,0.95); color:#111; padding:50px; border-radius:30px; border-left:18px solid #FF9933; box-shadow: 0 40px 100px rgba(0,0,0,0.6); font-size: 1.15rem;">{st.session_state.itinerary_data}</div>', unsafe_allow_html=True)
-
-# --- 8. PREMIUM FOOTER ---
-st.markdown(f"""
-    <div style="background: rgba(0, 0, 0, 0.7); padding: 50px; border-radius: 35px; margin-top: 100px; border: 1px solid rgba(255, 153, 51, 0.2); color: white;">
-        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 40px;">
-            <div style="flex: 2; min-width: 300px;">
-                <h2 style="color:#FF9933;">🚩 Yatri Mate AI</h2>
-                <p style="opacity: 0.8;">ప్రపంచవ్యాప్త పర్యాటక సమాచారాన్ని అరక్షణంలో మీ ముందుకు తెచ్చే మీ నమ్మకమైన నేస్తం.</p>
-                <p style="margin-top: 25px;"><b>📍 Location:</b> Teen Manzil Colony, Saidabad Main road, Hyderabad, Telangana 500059</p>
+cols = st.columns(4)
+for i, d in enumerate(dests):
+    with cols[i]:
+        st.markdown(f"""
+            <div class="dest-card">
+                <img src="{d['url']}" style="width:100%; border-radius:15px;">
+                <p style="text-align:center; color:white; font-weight:bold; margin-top:10px;">{d['name']}</p>
             </div>
-            <div style="flex: 1; min-width: 250px; text-align: right;">
-                <h4 style="color:#FF9933;">Get In Touch</h4>
-                <p><b>📞 Mobile:</b> +91-6304001323</p>
-                <p><b>✉️ Email:</b> veerababu.veera1@gmail.com</p>
-                <div style="margin-top: 30px;">
-                    <a href="https://yatrimate.streamlit.app/" style="background:#FF9933; color:white; text-decoration:none; font-weight:bold; padding: 12px 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(255,153,51,0.3);">🚀 Book Your Tour</a>
-                </div>
-            </div>
-        </div>
-        <p style='text-align: center; color: rgba(255,255,255,0.3); font-size: 0.9rem; margin-top: 60px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);'>© 2026 YatriMate AI - All Rights Reserved.</p>
-    </div>
-""", unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+
+# --- 8. FOOTER ---
+st.markdown("<br><hr><center>© 2026 YatriMate AI | Mobile: +91-6304001323</center>", unsafe_allow_html=True)
