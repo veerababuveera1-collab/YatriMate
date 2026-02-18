@@ -3,202 +3,142 @@ import google.generativeai as genai
 from typing import TypedDict
 import time
 
-# --- 1. STATE DEFINITION ---
-class TravelState(TypedDict):
-    request: str
-    skeleton_plan: str
-    research_data: str
-    final_itinerary: str
-
-# --- 2. PAGE CONFIGURATION ---
+# --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="YatriMate AI - Your Travel Companion", 
+    page_title="YatriMate AI - 2026 Edition", 
     page_icon="🗺️", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- 3. CUSTOM UI & STYLING (Mind-Blowing GUI) ---
+# --- 2. CUSTOM UI & STYLING ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
-    
-    html, body, [class*="st-"] {
-        font-family: 'Poppins', sans-serif;
-    }
-
-    /* Vibrant Travel Background */
+    html, body, [class*="st-"] { font-family: 'Poppins', sans-serif; }
     .stApp {
         background: url("https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=2000&q=80");
         background-size: cover;
         background-attachment: fixed;
     }
-
-    /* Glassmorphism Logic */
     .agent-card {
-        background: rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        padding: 25px;
-        border-radius: 20px;
-        border: 1px solid rgba(255,255,255,0.3);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        margin-bottom: 20px;
-        color: #ffffff;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(15px);
+        padding: 20px;
+        border-radius: 15px;
+        border: 1px solid rgba(255,255,255,0.2);
+        margin-bottom: 15px;
+        color: white;
     }
-
-    /* Premium Button Styling */
-    div.stButton > button {
-        background: linear-gradient(135deg, #FF9933 0%, #FFFFFF 50%, #138808 100%);
-        color: #000080; /* Navy Blue like Ashoka Chakra */
-        border: none;
-        padding: 15px 30px;
-        border-radius: 50px;
-        font-weight: 800;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        transition: 0.4s;
-        width: 100%;
-        text-transform: uppercase;
-    }
-    
-    div.stButton > button:hover {
-        transform: translateY(-3px) scale(1.02);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-    }
-
-    .title-text {
-        color: #ffffff;
-        text-shadow: 4px 4px 8px rgba(0,0,0,0.6);
-        font-weight: 900;
-        font-size: 4.5rem !important;
-        text-align: center;
-        margin-bottom: 0px;
-    }
-    
-    .subtitle-text {
-        color: #ffffff;
-        text-align: center;
-        font-size: 1.4rem;
-        font-weight: 400;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        margin-bottom: 3rem;
-    }
-
-    /* Final Result Container */
     .itinerary-container {
-        background: rgba(255, 255, 255, 0.95);
-        padding: 40px;
-        border-radius: 25px;
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
         color: #1a1a1a;
-        border: 2px solid #FF9933;
-        box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+        border-left: 10px solid #FF9933;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    div.stButton > button {
+        background: linear-gradient(90deg, #FF9933, #138808);
+        color: white !important;
+        border: none;
+        padding: 12px;
+        border-radius: 10px;
+        font-weight: bold;
+        width: 100%;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. CORE ENGINE (Gemini 1.5 Flash) ---
-def get_gemini_model():
+# --- 3. CORE ENGINE (Gemini 3 Flash) ---
+def get_gemini_client():
     api_key = st.secrets.get("GOOGLE_API_KEY")
     if not api_key:
+        st.error("API Key Missing! Please add it to .streamlit/secrets.toml")
         return None
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel('gemini-1.5-flash')
+    # Using the latest 2026 model
+    return genai.GenerativeModel('gemini-3-flash-preview')
 
-def agent_task(model, prompt):
+def agent_task(model, prompt, role="General"):
+    # System instruction sets the 'persona'
+    sys_msg = f"Role: {role}. Provide clear, accurate travel details. Use Telugu and English as requested."
     try:
-        response = model.generate_content(prompt)
+        response = model.generate_content(f"{sys_msg}\n\nTask: {prompt}")
         return response.text
     except Exception as e:
         return f"Error: {str(e)}"
 
+# --- 4. SESSION STATE INITIALIZATION ---
+if "itinerary" not in st.session_state:
+    st.session_state.itinerary = ""
+if "steps" not in st.session_state:
+    st.session_state.steps = {"planner": "", "research": "", "writer": ""}
+
 # --- 5. UI LAYOUT ---
+st.markdown('<h1 style="color:white; text-align:center; font-size:3rem;">🗺️ YatriMate AI</h1>', unsafe_allow_html=True)
+st.markdown('<p style="color:white; text-align:center; font-size:1.2rem;">మీ పర్సనల్ ట్రావెల్ ఏజెంట్ - Powered by Gemini 3</p>', unsafe_allow_html=True)
 
-st.markdown('<h1 class="title-text">YatriMate AI</h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle-text">మీ వ్యక్తిగత ప్రయాణ వేదిక - Autonomous Travel Agent</p>', unsafe_allow_html=True)
-
-# Sidebar Control
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/201/201623.png", width=120)
-    st.markdown("### 🛠️ Agent Dashboard")
-    if st.secrets.get("GOOGLE_API_KEY"):
-        st.success("Yatri Engine Active ✅")
-    else:
-        st.error("Missing API Key in Secrets ❌")
-    
-    st.divider()
-    st.info("""
-    **YatriMate Workflow:**
-    - **Planner Agent:** బ్లూప్రింట్ సిద్ధం చేస్తుంది.
-    - **Researcher Agent:** వాస్తవాలను ధృవీకరిస్తుంది.
-    - **Writer Agent:** అందమైన గైడ్‌ను రాస్తుంది.
-    """)
+    st.header("⚙️ Agent Settings")
+    st.info("ప్రస్తుతం **Gemini 3 Flash** మోడల్ వాడుతున్నాము. ఇది వేగంగా మరియు ఖచ్చితంగా సమాధానాలిస్తుంది.")
+    if st.button("క్లియర్ చేయండి (Clear)"):
+        st.session_state.itinerary = ""
+        st.session_state.steps = {"planner": "", "research": "", "writer": ""}
+        st.rerun()
 
-# Main Input Section
-with st.container():
-    input_col, btn_col = st.columns([4, 1])
-    with input_col:
-        user_prompt = st.text_input("", placeholder="ఉదా: 5-రోజుల కాశీ యాత్ర ప్రణాళిక...", label_visibility="collapsed")
-    with btn_col:
-        go_btn = st.button("ప్రారంభించు 🚩")
+# Main Input
+user_input = st.text_input("మీ ప్రయాణ గమ్యాన్ని తెలపండి:", placeholder="ఉదా: 3-రోజుల వైజాగ్ యాత్ర ప్లాన్...")
+generate_btn = st.button("యాత్ర ప్రారంభించు 🚩")
 
-# Pipeline Execution
-if go_btn:
-    model = get_gemini_model()
-    
-    if model and user_prompt:
-        state = TravelState(request=user_prompt, skeleton_plan="", research_data="", final_itinerary="")
-        
-        # Agents Progress Visualization
+if generate_btn and user_input:
+    model = get_gemini_client()
+    if model:
         p1, p2, p3 = st.columns(3)
         
         # STEP 1: PLANNER
         with p1:
             st.markdown('<div class="agent-card">', unsafe_allow_html=True)
-            st.markdown("#### 🗺️ Planner Agent")
-            with st.spinner("ప్లాన్ వేస్తోంది..."):
-                state['skeleton_plan'] = agent_task(model, f"Create a skeleton itinerary for: {user_prompt}")
-                st.caption("Strategy Layer Complete")
-                st.write(state['skeleton_plan'][:150] + "...")
+            with st.spinner("🗺️ రూట్ మ్యాప్ సిద్ధం చేస్తున్నాను..."):
+                res = agent_task(model, f"Create a skeleton itinerary for: {user_input}", "Travel Architect")
+                st.session_state.steps["planner"] = res
+                st.success("Planner Ready!")
+                st.write(res[:100] + "...")
             st.markdown('</div>', unsafe_allow_html=True)
 
         # STEP 2: RESEARCHER
         with p2:
             st.markdown('<div class="agent-card">', unsafe_allow_html=True)
-            st.markdown("#### 🔍 Research Agent")
-            with st.spinner("వివరాలు వెతుకుతోంది..."):
-                state['research_data'] = agent_task(model, f"Research prices, hours, and addresses for: {state['skeleton_plan']}")
-                st.caption("Data Verified")
-                st.write("✅ 10+ Facts Checked")
+            with st.spinner("🔍 ధరలు మరియు సమయాలు వెతుకుతున్నాను..."):
+                res = agent_task(model, f"Research entrance fees and timings for: {st.session_state.steps['planner']}", "Expert Researcher")
+                st.session_state.steps["research"] = res
+                st.success("Research Done!")
+                st.write("✅ Facts Verified")
             st.markdown('</div>', unsafe_allow_html=True)
 
         # STEP 3: WRITER
         with p3:
             st.markdown('<div class="agent-card">', unsafe_allow_html=True)
-            st.markdown("#### ✍️ Writer Agent")
-            with st.spinner("రిపోర్ట్ రాస్తోంది..."):
-                final_prompt = f"Using this research: {state['research_data']}, write a final travel guide in Telugu and English."
-                state['final_itinerary'] = agent_task(model, final_prompt)
-                st.caption("Final Polish Done")
-                st.write("✨ Guide Ready!")
+            with st.spinner("✍️ అందమైన గైడ్ రాస్తున్నాను..."):
+                prompt = f"Combine this: {st.session_state.steps['research']}. Write a travel guide in Telugu and English."
+                res = agent_task(model, prompt, "Creative Writer")
+                st.session_state.itinerary = res
+                st.success("Guide Finished!")
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # FINAL OUTPUT
-        st.divider()
-        st.markdown("### 📔 మీ ప్రత్యేక ప్రయాణ నివేదిక (Final Itinerary)")
-        st.markdown(f'<div class="itinerary-container">{state["final_itinerary"]}</div>', unsafe_allow_html=True)
-        
-        st.download_button(
-            label="Download Yatri Guide 📥",
-            data=state['final_itinerary'],
-            file_name="YatriMate_Plan.md",
-            mime="text/markdown"
-        )
-    else:
-        st.error("దయచేసి మీ అభ్యర్థనను తెలియజేయండి లేదా API Key తనిఖీ చేయండి.")
+# --- 6. DISPLAY FINAL RESULT ---
+if st.session_state.itinerary:
+    st.divider()
+    st.markdown("### 📔 మీ ప్రత్యేక ప్రయాణ నివేదిక (Final Itinerary)")
+    st.markdown(f'<div class="itinerary-container">', unsafe_allow_html=True)
+    st.markdown(st.session_state.itinerary)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.download_button(
+        label="డౌన్లోడ్ గైడ్ 📥",
+        data=st.session_state.itinerary,
+        file_name="My_Travel_Plan.md",
+        mime="text/markdown"
+    )
 
-# Footer
-st.markdown("""
-    <div style="text-align: center; margin-top: 60px; color: white; opacity: 0.8;">
-        YatriMate AI • Powered by Gemini 1.5 Flash • Smart Travel Agent System
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown('<p style="text-align:center; color:white; margin-top:50px;">YatriMate AI 2026 • Gemini 3 Flash Preview</p>', unsafe_allow_html=True)
