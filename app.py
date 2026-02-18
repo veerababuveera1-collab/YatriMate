@@ -9,16 +9,16 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. THE CINEMATIC UI STYLING (The "Magic" is here) ---
+# --- 2. THE CINEMATIC UI STYLING (Cleaned Version) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
     * { font-family: 'Inter', sans-serif; }
     
     .stApp {
-        /* High-Definition Cinematic Background */
-        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.85)), 
-                    url("https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=2074");
+        /* High-Definition Cinematic Beach Sunset Background */
+        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), 
+                    url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2073");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
@@ -57,9 +57,9 @@ st.markdown("""
         margin-bottom: 30px;
     }
     .dest-card:hover {
-        transform: translateY(-15px) rotate(1deg);
+        transform: translateY(-15px);
         border-color: #FF9933;
-        box-shadow: 0 25px 50px rgba(255, 153, 51, 0.2);
+        box-shadow: 0 25px 50px rgba(255, 153, 51, 0.3);
     }
     .img-container {
         width: 100%;
@@ -106,7 +106,7 @@ def generate_travel_plan(query, lang):
     if not api_key: return "Setup Error: Google API Key missing."
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel('gemini-1.5-flash')
-    response = model.generate_content(f"Create a detailed and professional travel plan for {query} in {lang}. Include daily highlights, hidden gems, and cost breakdown.")
+    response = model.generate_content(f"Create a detailed and professional travel plan for {query} in {lang}. Include daily highlights and estimated budget.")
     return response.text
 
 if 'itinerary_data' not in st.session_state:
@@ -119,10 +119,10 @@ st.markdown('<p class="sub-title">మీ ప్రయాణ అనుభవా�
 # --- 5. SEARCH AREA ---
 c1, c2, c3 = st.columns([1, 2, 1])
 with c2:
-    user_query = st.text_input("", placeholder="ఎక్కడికి వెళ్లాలనుకుంటున్నారు? (ఉదా: 4 days trip to Switzerland...)")
+    user_query = st.text_input("", placeholder="ఎక్కడికి వెళ్లాలనుకుంటున్నారు? (ఉదా: 5 days in Maldives...)")
     generate = st.button("Explore Now 🚀")
 
-# --- 6. POPULAR DESTINATIONS (Maldives & Manali included) ---
+# --- 6. POPULAR DESTINATIONS ---
 if not st.session_state.itinerary_data:
     st.markdown("<h2 style='text-align: center; color: white; margin-top: 35px; font-weight: 800;'>📍 Top Trending Destinations</h2>", unsafe_allow_html=True)
     
@@ -146,8 +146,7 @@ if not st.session_state.itinerary_data:
                     st.markdown(f"""
                         <div class="dest-card">
                             <div class="img-container">
-                                <img src="{dests[idx]['url']}" class="dest-img" 
-                                     onerror="this.onerror=null;this.src='https://via.placeholder.com/400x200/111/FF9933?text={dests[idx]['name']}';">
+                                <img src="{dests[idx]['url']}" class="dest-img">
                             </div>
                             <div class="dest-label">{dests[idx]['name']}</div>
                         </div>
@@ -168,18 +167,13 @@ st.markdown(f"""
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 40px;">
             <div style="flex: 2; min-width: 300px;">
                 <h2 style="color:#FF9933;">🚩 Yatri Mate AI</h2>
-                <p style="opacity: 0.8;">ప్రపంచవ్యాప్త పర్యాటక సమాచారాన్ని అరక్షణంలో మీ ముందుకు తెచ్చే మీ నమ్మకమైన నేస్తం.</p>
-                <p style="margin-top: 25px;"><b>📍 Location:</b> Teen Manzil Colony, Saidabad Main road, Hyderabad, Telangana 500059</p>
+                <p style="opacity: 0.8;">మీ నమ్మకమైన ట్రావెల్ పార్ట్నర్.</p>
+                <p style="margin-top: 25px;"><b>📍 Location:</b> Saidabad, Hyderabad, 500059</p>
             </div>
             <div style="flex: 1; min-width: 250px; text-align: right;">
-                <h4 style="color:#FF9933;">Get In Touch</h4>
                 <p><b>📞 Mobile:</b> +91-6304001323</p>
                 <p><b>✉️ Email:</b> veerababu.veera1@gmail.com</p>
-                <div style="margin-top: 30px;">
-                    <a href="https://yatrimate.streamlit.app/" style="background:#FF9933; color:white; text-decoration:none; font-weight:bold; padding: 12px 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(255,153,51,0.3);">🚀 Book Your Tour</a>
-                </div>
             </div>
         </div>
-        <p style='text-align: center; color: rgba(255,255,255,0.3); font-size: 0.9rem; margin-top: 60px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);'>© 2026 YatriMate AI - All Rights Reserved.</p>
     </div>
 """, unsafe_allow_html=True)
