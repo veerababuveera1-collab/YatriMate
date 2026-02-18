@@ -1,144 +1,170 @@
 import streamlit as st
 import google.generativeai as genai
-from typing import TypedDict
 import time
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="YatriMate AI - 2026 Edition", 
-    page_icon="🗺️", 
+    page_title="YatriMate AI - Professional Edition", 
+    page_icon="🚩", 
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# --- 2. CUSTOM UI & STYLING ---
+# --- 2. HIGH-CONTRAST CLEAN UI (White & Black) ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
-    html, body, [class*="st-"] { font-family: 'Poppins', sans-serif; }
+    /* Force Light Mode Aesthetics */
     .stApp {
-        background: url("https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=2000&q=80");
-        background-size: cover;
-        background-attachment: fixed;
+        background-color: #FFFFFF !important;
     }
-    .agent-card {
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(15px);
-        padding: 20px;
-        border-radius: 15px;
-        border: 1px solid rgba(255,255,255,0.2);
-        margin-bottom: 15px;
-        color: white;
+
+    /* Global Text Color - Deep Charcoal for readability */
+    html, body, [class*="st-"], div, p, span, label {
+        color: #1A1A1A !important;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
+
+    /* Titles */
+    h1, h2, h3 {
+        color: #000000 !important;
+        font-weight: 700 !important;
+    }
+
+    /* Input Field */
+    .stTextInput>div>div>input {
+        background-color: #FFFFFF !important;
+        color: #1A1A1A !important;
+        border: 2px solid #DDDDDD !important;
+        border-radius: 8px !important;
+        padding: 12px !important;
+    }
+
+    /* Results Container - Pure White with subtle shadow */
     .itinerary-container {
-        background: white;
-        padding: 30px;
-        border-radius: 20px;
-        color: #1a1a1a;
-        border-left: 10px solid #FF9933;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        background-color: #FFFFFF !important;
+        color: #1A1A1A !important;
+        padding: 40px;
+        border-radius: 12px;
+        border: 1px solid #EEEEEE;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        line-height: 1.8;
+        font-size: 1.1rem;
     }
-    div.stButton > button {
-        background: linear-gradient(90deg, #FF9933, #138808);
-        color: white !important;
-        border: none;
-        padding: 12px;
-        border-radius: 10px;
-        font-weight: bold;
+
+    /* Increase Telugu Font Size Specifically */
+    .telugu-text {
+        font-size: 1.25rem;
+        line-height: 2;
+    }
+
+    /* Tables Styling - High Contrast */
+    table {
         width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        background-color: #FFFFFF !important;
+        color: #1A1A1A !important;
+    }
+    th {
+        background-color: #F2F2F2 !important;
+        color: #000000 !important;
+        font-weight: bold;
+        border: 1px solid #CCCCCC !important;
+        padding: 12px !important;
+    }
+    td {
+        border: 1px solid #EEEEEE !important;
+        padding: 12px !important;
+    }
+
+    /* Action Button - Saffron Gradient */
+    div.stButton > button {
+        background: linear-gradient(90deg, #FF9933, #FF7700) !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        padding: 12px 30px !important;
+        border-radius: 6px !important;
+        font-weight: bold !important;
+        width: 100%;
+    }
+    
+    /* Horizontal Rule */
+    hr {
+        border: 0;
+        border-top: 1px solid #EEEEEE !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
 # --- 3. CORE ENGINE (Gemini 3 Flash) ---
-def get_gemini_client():
+def get_gemini_model():
     api_key = st.secrets.get("GOOGLE_API_KEY")
     if not api_key:
-        st.error("API Key Missing! Please add it to .streamlit/secrets.toml")
+        st.error("API Key missing! Please add it to Streamlit Secrets.")
         return None
     genai.configure(api_key=api_key)
-    # Using the latest 2026 model
+    # Using the latest Gemini 3 model for 2026
     return genai.GenerativeModel('gemini-3-flash-preview')
 
-def agent_task(model, prompt, role="General"):
-    # System instruction sets the 'persona'
-    sys_msg = f"Role: {role}. Provide clear, accurate travel details. Use Telugu and English as requested."
+def agent_call(model, prompt, role_desc):
+    full_prompt = f"Role: {role_desc}. Language: Mix of Telugu and English. Output should be clear and professional.\n\nTask: {prompt}"
     try:
-        response = model.generate_content(f"{sys_msg}\n\nTask: {prompt}")
+        response = model.generate_content(full_prompt)
         return response.text
     except Exception as e:
         return f"Error: {str(e)}"
 
-# --- 4. SESSION STATE INITIALIZATION ---
-if "itinerary" not in st.session_state:
-    st.session_state.itinerary = ""
-if "steps" not in st.session_state:
-    st.session_state.steps = {"planner": "", "research": "", "writer": ""}
+# --- 4. SESSION STATE ---
+if 'final_guide' not in st.session_state:
+    st.session_state.final_guide = None
 
-# --- 5. UI LAYOUT ---
-st.markdown('<h1 style="color:white; text-align:center; font-size:3rem;">🗺️ YatriMate AI</h1>', unsafe_allow_html=True)
-st.markdown('<p style="color:white; text-align:center; font-size:1.2rem;">మీ పర్సనల్ ట్రావెల్ ఏజెంట్ - Powered by Gemini 3</p>', unsafe_allow_html=True)
+# --- 5. MAIN INTERFACE ---
+st.markdown("<h1 style='text-align: center; margin-bottom: 0;'>🚩 YatriMate AI</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #555 !important;'>మీ పర్సనల్ ట్రావెల్ ఏజెంట్ - Gemini 3 Edition</p>", unsafe_allow_html=True)
+st.markdown("---")
 
-with st.sidebar:
-    st.header("⚙️ Agent Settings")
-    st.info("ప్రస్తుతం **Gemini 3 Flash** మోడల్ వాడుతున్నాము. ఇది వేగంగా మరియు ఖచ్చితంగా సమాధానాలిస్తుంది.")
-    if st.button("క్లియర్ చేయండి (Clear)"):
-        st.session_state.itinerary = ""
-        st.session_state.steps = {"planner": "", "research": "", "writer": ""}
-        st.rerun()
+# Centered Input Box
+col_l, col_m, col_r = st.columns([1, 2, 1])
+with col_m:
+    user_query = st.text_input("ప్రయాణ వివరాలు తెలపండి:", placeholder="ఉదా: 3 రోజుల అమరావతి యాత్ర ప్లాన్...")
+    submit = st.button("Generate My Itinerary")
 
-# Main Input
-user_input = st.text_input("మీ ప్రయాణ గమ్యాన్ని తెలపండి:", placeholder="ఉదా: 3-రోజుల వైజాగ్ యాత్ర ప్లాన్...")
-generate_btn = st.button("యాత్ర ప్రారంభించు 🚩")
-
-if generate_btn and user_input:
-    model = get_gemini_client()
+# --- 6. PROCESSING WORKFLOW ---
+if submit and user_query:
+    model = get_gemini_model()
     if model:
-        p1, p2, p3 = st.columns(3)
-        
-        # STEP 1: PLANNER
-        with p1:
-            st.markdown('<div class="agent-card">', unsafe_allow_html=True)
-            with st.spinner("🗺️ రూట్ మ్యాప్ సిద్ధం చేస్తున్నాను..."):
-                res = agent_task(model, f"Create a skeleton itinerary for: {user_input}", "Travel Architect")
-                st.session_state.steps["planner"] = res
-                st.success("Planner Ready!")
-                st.write(res[:100] + "...")
-            st.markdown('</div>', unsafe_allow_html=True)
+        with st.status("ఏజెంట్లు పనిచేస్తున్నారు...", expanded=True) as status:
+            st.write("🗺️ ప్లానర్: రూట్ సిద్ధం చేస్తోంది...")
+            plan = agent_call(model, f"Create a logical day-wise skeleton for {user_query}", "Travel Architect")
+            
+            st.write("🔍 రీసెర్చర్: ధరలు మరియు సమయాలు ధృవీకరిస్తోంది...")
+            research = agent_call(model, f"Provide current entry fees and timings for these places: {plan}", "Fact Checker")
+            
+            st.write("✍️ రైటర్: ఫైనల్ గైడ్ రాస్తోంది...")
+            final = agent_call(model, f"Create a detailed travel guide with tables in Telugu and English. Use this data: {research}", "Professional Travel Writer")
+            
+            st.session_state.final_guide = final
+            status.update(label="యాత్ర ప్లాన్ సిద్ధంగా ఉంది! ✅", state="complete", expanded=False)
 
-        # STEP 2: RESEARCHER
-        with p2:
-            st.markdown('<div class="agent-card">', unsafe_allow_html=True)
-            with st.spinner("🔍 ధరలు మరియు సమయాలు వెతుకుతున్నాను..."):
-                res = agent_task(model, f"Research entrance fees and timings for: {st.session_state.steps['planner']}", "Expert Researcher")
-                st.session_state.steps["research"] = res
-                st.success("Research Done!")
-                st.write("✅ Facts Verified")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        # STEP 3: WRITER
-        with p3:
-            st.markdown('<div class="agent-card">', unsafe_allow_html=True)
-            with st.spinner("✍️ అందమైన గైడ్ రాస్తున్నాను..."):
-                prompt = f"Combine this: {st.session_state.steps['research']}. Write a travel guide in Telugu and English."
-                res = agent_task(model, prompt, "Creative Writer")
-                st.session_state.itinerary = res
-                st.success("Guide Finished!")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-# --- 6. DISPLAY FINAL RESULT ---
-if st.session_state.itinerary:
-    st.divider()
-    st.markdown("### 📔 మీ ప్రత్యేక ప్రయాణ నివేదిక (Final Itinerary)")
+# --- 7. DISPLAY RESULTS ---
+if st.session_state.final_guide:
+    st.markdown("### 📔 మీ ప్రత్యేక ప్రయాణ నివేదిక")
+    
+    # Render final output in the clean container
     st.markdown(f'<div class="itinerary-container">', unsafe_allow_html=True)
-    st.markdown(st.session_state.itinerary)
+    st.markdown(st.session_state.final_guide)
     st.markdown('</div>', unsafe_allow_html=True)
     
-    st.download_button(
-        label="డౌన్లోడ్ గైడ్ 📥",
-        data=st.session_state.itinerary,
-        file_name="My_Travel_Plan.md",
-        mime="text/markdown"
-    )
+    st.divider()
+    
+    # Download and Reset
+    d_col1, d_col2 = st.columns([1, 1])
+    with d_col1:
+        st.download_button("Download Plan (MD) 📥", st.session_state.final_guide, file_name="My_Travel_Plan.md")
+    with d_col2:
+        if st.button("Reset & Start New"):
+            st.session_state.final_guide = None
+            st.rerun()
 
-st.markdown('<p style="text-align:center; color:white; margin-top:50px;">YatriMate AI 2026 • Gemini 3 Flash Preview</p>', unsafe_allow_html=True)
+# --- 8. FOOTER ---
+st.markdown("<br><p style='text-align: center; font-size: 0.8rem; color: #888 !important;'>YatriMate AI © 2026 | Smart Multi-Agent System</p>", unsafe_allow_html=True)
