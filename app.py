@@ -11,13 +11,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. THEME & PINTEREST-ENVATO STYLE CSS ---
+# --- 2. THEME & ENVATO STYLE CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
     * { font-family: 'Poppins', sans-serif; }
 
-    /* Main Background */
+    /* Main Background Gradient */
     .stApp {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
     }
@@ -33,6 +33,7 @@ st.markdown("""
         text-align: center;
         max-width: 550px;
         margin: auto;
+        margin-top: 20px;
     }
 
     /* 3D Buddy Animation */
@@ -48,7 +49,7 @@ st.markdown("""
     }
 
     /* Text & Input Styling */
-    h1, h2 { color: #ffffff !important; font-weight: 800; }
+    h2 { color: #ffffff !important; font-weight: 800; font-size: 2rem; }
     p { color: #94a3b8 !important; }
     
     div.stTextInput > div > div > input {
@@ -57,6 +58,7 @@ st.markdown("""
         border-radius: 15px !important;
         border: 1px solid #334155 !important;
         height: 50px;
+        padding-left: 15px;
     }
 
     /* Button Styling */
@@ -69,13 +71,15 @@ st.markdown("""
         font-weight: 700;
         border: none;
         transition: 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
     div.stButton > button:hover {
-        transform: scale(1.03);
-        box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        transform: scale(1.02);
+        box-shadow: 0 0 25px rgba(59, 130, 246, 0.5);
     }
 
-    /* Result Result Box */
+    /* Itinerary Box */
     .itinerary-box {
         background: #ffffff;
         color: #1a1a1a;
@@ -88,7 +92,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. AI AGENT ENGINE ---
+# --- 3. MULTI-AGENT ENGINE LOGIC ---
 def run_multi_agent_system(query, lang):
     try:
         api_key = st.secrets["GOOGLE_API_KEY"]
@@ -97,11 +101,11 @@ def run_multi_agent_system(query, lang):
         
         prompt = f"""
         Act as a professional Multi-Agent Travel System for: {query}.
-        Structure the output using these 3 specialized AI Agents:
+        Structure the response using these 3 specialized AI Agents:
         1. 🕵️ Agent 'Route Architect': Suggest 2-3 mandatory middle stopovers.
-        2. 📅 Agent 'Itinerary Planner': Create a day-wise logical schedule.
+        2. 📅 Agent 'Itinerary Planner': Create a detailed day-wise logical schedule.
         3. 💰 Agent 'Budget & Food Expert': Estimate cost in INR and 3 local foods.
-        Language: {lang}. Use Markdown with icons.
+        Language: {lang}. Format: Clean Markdown with icons.
         """
         response = model.generate_content(prompt)
         return response.text
@@ -114,73 +118,75 @@ if 'logged_in' not in st.session_state:
 if 'itinerary' not in st.session_state:
     st.session_state.itinerary = None
 
-# --- 5. AUTHENTICATION UI (LOGIN/REGISTER) ---
+# --- 5. LOGIN / REGISTER UI ---
 if not st.session_state.logged_in:
     _, col2, _ = st.columns([1, 2, 1])
     with col2:
         st.markdown('<div class="auth-container">', unsafe_allow_html=True)
-        # Professional 3D Robot Image
+        # Fixing the Image (High Quality 3D Buddy)
         st.markdown('<img src="https://cdn3d.iconscout.com/3d/premium/thumb/robot-saying-hello-4835150-4027063.png" class="robot-buddy">', unsafe_allow_html=True)
+        
         st.markdown("<h2>Welcome to Sign Up Buddy!</h2>", unsafe_allow_html=True)
         
         mode = option_menu(None, ["Sign In", "Sign Up"], 
-            icons=['lock', 'person-plus'], 
+            icons=['lock-fill', 'person-plus-fill'], 
             menu_icon="cast", default_index=0, orientation="horizontal",
-            styles={"container": {"background-color": "transparent"}, "nav-link-selected": {"background-color": "#3b82f6"}})
+            styles={
+                "container": {"background-color": "transparent", "padding": "0"},
+                "nav-link": {"font-size": "15px", "color": "#94a3b8"},
+                "nav-link-selected": {"background-color": "#3b82f6", "color": "white"}
+            })
 
         if mode == "Sign In":
-            email = st.text_input("Email", placeholder="buddy@example.com")
-            pwd = st.text_input("Password", type="password")
+            email = st.text_input("Email Address", placeholder="buddy@example.com", key="login_email")
+            pwd = st.text_input("Password", type="password", placeholder="••••••••", key="login_pwd")
             if st.button("SIGN IN"):
                 if email and pwd:
                     st.session_state.logged_in = True
                     st.rerun()
-                else: st.error("Enter details")
+                else: st.error("Please enter details")
         else:
-            st.text_input("Full Name")
-            st.text_input("Email")
+            st.text_input("Full Name", placeholder="Veera Babu")
+            st.text_input("Email Address", placeholder="buddy@example.com")
             st.text_input("Create Password", type="password")
             if st.button("CREATE ACCOUNT"):
                 st.success("Account Created! Please Sign In.")
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 6. MAIN APPLICATION DASHBOARD ---
+# --- 6. MAIN DASHBOARD ---
 else:
-    # Sidebar
     with st.sidebar:
-        st.image("https://cdn3d.iconscout.com/3d/premium/thumb/robot-saying-hello-4835150-4027063.png", width=100)
+        st.markdown('<img src="https://cdn3d.iconscout.com/3d/premium/thumb/robot-saying-hello-4835150-4027063.png" width="100">', unsafe_allow_html=True)
         st.write("---")
         if st.button("Sign Out 🚪"):
             st.session_state.logged_in = False
             st.rerun()
 
-    st.markdown("<h1 style='text-align:center;'>🚩 YatriMate AI Dashboard</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align:center; color:white;'>🚩 YatriMate AI Buddy Dashboard</h1>", unsafe_allow_html=True)
     
-    # Search Section
-    c1, c2, c3 = st.columns([1, 2, 1])
-    with c2:
-        query = st.text_input("", placeholder="ఎక్కడికి వెళ్లాలనుకుంటున్నారు? (e.g. Hyderabad to Varanasi)", label_visibility="collapsed")
+    sc1, sc2, sc3 = st.columns([1, 2, 1])
+    with sc2:
+        query = st.text_input("", placeholder="ఎక్కడికి వెళ్లాలనుకుంటున్నారు? (e.g. Hyderabad to Varanasi via Nagpur)", label_visibility="collapsed")
         if st.button("ACTIVATE AI AGENTS 🚀"):
             if query:
-                with st.status("🤖 Buddy is planning...", expanded=True) as status:
-                    st.write("🕵️ Finding stopovers...")
+                with st.status("🤖 Buddy is coordinating with Agents...", expanded=True) as status:
+                    st.write("🕵️ Route Architect is mapping stops...")
                     time.sleep(1)
-                    st.write("📅 Organizing schedule...")
+                    st.write("📅 Itinerary Planner is scheduling...")
                     res = run_multi_agent_system(query, "Telugu & English Mix")
                     st.session_state.itinerary = res
-                    status.update(label="Planning Complete!", state="complete")
+                    status.update(label="Plan Ready!", state="complete")
 
-    # Display Result
     if st.session_state.itinerary:
         st.markdown(f'<div class="itinerary-box">{st.session_state.itinerary}</div>', unsafe_allow_html=True)
-        if st.button("🔄 New Trip"):
+        if st.button("🔄 Plan Another Journey"):
             st.session_state.itinerary = None
             st.rerun()
     else:
-        # Trending Section
         st.write("---")
-        st.markdown("<h3 style='text-align:center;'>🌍 Trending Now</h3>", unsafe_allow_html=True)
-        d_cols = st.columns(4)
+        st.markdown("<h3 style='text-align:center; color:white;'>🌍 Trending Now</h3>", unsafe_allow_html=True)
+        t_cols = st.columns(4)
         dests = [
             ("Varanasi", "https://images.unsplash.com/photo-1561361513-2d000a50f0dc?w=400"),
             ("Andaman", "https://images.unsplash.com/photo-1589330273594-fade1ee91647?w=400"),
@@ -188,8 +194,7 @@ else:
             ("Bali", "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400")
         ]
         for i, (name, img) in enumerate(dests):
-            with d_cols[i]:
+            with t_cols[i]:
                 st.image(img, use_container_width=True, caption=name)
 
-    # Footer
-    st.markdown("<br><p style='text-align:center; color:#94a3b8; font-size:0.8rem;'>© 2026 YatriMate AI | Multi-Agent Travel Intelligence</p>", unsafe_allow_html=True)
+    st.markdown("<br><p style='text-align:center; color:#94a3b8; font-size:0.8rem;'>© 2026 YatriMate AI | Saidabad, Hyderabad</p>", unsafe_allow_html=True)
