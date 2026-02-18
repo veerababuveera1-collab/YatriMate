@@ -5,13 +5,13 @@ import time
 
 # --- 1. SYSTEM CONFIGURATION ---
 st.set_page_config(
-    page_title="YatriMate AI - Travel Buddy",
+    page_title="YatriMate AI - Premium Buddy",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. LUXURY UI & ANIMATIONS CSS ---
+# --- 2. LUXURY UI & TRAVELER LOOK CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -19,11 +19,11 @@ st.markdown("""
 
     /* Premium Animated Background */
     .stApp {
-        background: linear-gradient(-45deg, #0f172a, #1e1b4b, #1e3a8a, #020617);
+        background: linear-gradient(-45deg, #020617, #0f172a, #1e3a8a, #1e1b4b);
         background-size: 400% 400%;
-        animation: gradient 15s ease infinite;
+        animation: gradientBG 15s ease infinite;
     }
-    @keyframes gradient {
+    @keyframes gradientBG {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
@@ -33,146 +33,178 @@ st.markdown("""
     .auth-container {
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         padding: 50px;
-        border-radius: 40px;
-        box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+        border-radius: 50px;
+        box-shadow: 0 40px 100px rgba(0,0,0,0.6);
         text-align: center;
-        max-width: 500px;
+        max-width: 550px;
         margin: auto;
+        margin-top: 20px;
     }
 
     /* 3D Robot Buddy Animation */
     .robot-buddy {
-        width: 180px;
+        width: 200px;
         filter: drop-shadow(0 0 25px rgba(59, 130, 246, 0.7));
-        animation: float 4s ease-in-out infinite;
+        animation: floatRobot 4s ease-in-out infinite;
+        margin-bottom: 10px;
     }
-    @keyframes float {
-        0%, 100% { transform: translateY(0px) scale(1); }
-        50% { transform: translateY(-20px) scale(1.05); }
+    @keyframes floatRobot {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-25px) rotate(3deg); }
     }
 
-    /* Input & Button Styling */
+    /* Headlines & Neon Text */
+    h2 { 
+        background: linear-gradient(90deg, #ffffff, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800; font-size: 2.5rem; 
+    }
+    p { color: #94a3b8 !important; font-size: 1.1rem; }
+
+    /* Modern Inputs */
     div.stTextInput > div > div > input {
         background-color: rgba(255, 255, 255, 0.07) !important;
         color: white !important;
         border-radius: 15px !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        height: 50px;
+        height: 55px;
+        font-size: 1.1rem;
     }
+
+    /* Premium Neon Button */
     div.stButton > button {
         background: linear-gradient(90deg, #3b82f6, #6366f1) !important;
         color: white !important;
-        border-radius: 15px !important;
-        height: 55px;
+        border-radius: 18px !important;
+        height: 60px;
         width: 100%;
         font-weight: 800;
+        font-size: 1.2rem;
         border: none;
         transition: 0.4s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
     div.stButton > button:hover {
         transform: translateY(-5px);
-        box-shadow: 0 15px 35px rgba(59, 130, 246, 0.5);
+        box-shadow: 0 15px 40px rgba(59, 130, 246, 0.5);
     }
 
-    /* Result Box (Itinerary) */
-    .report-box {
-        background: white; color: #111827; padding: 40px; 
-        border-radius: 30px; border-left: 12px solid #3b82f6;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    /* White Result Box */
+    .itinerary-box {
+        background: #ffffff;
+        color: #111827;
+        padding: 40px;
+        border-radius: 35px;
+        border-left: 15px solid #3b82f6;
+        margin-top: 30px;
+        text-align: left;
     }
+
+    header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
 # --- 3. MULTI-AGENT AI ENGINE ---
-def run_ai_travel_system(query, lang):
+def run_ai_travel_buddy(query, lang):
     try:
-        # Get Key from Streamlit Secrets
         api_key = st.secrets["GOOGLE_API_KEY"]
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash')
         
         prompt = f"""
         Act as a professional Multi-Agent Travel System for: {query}.
-        Structure your response using 3 specialized Agents:
-        1. 🕵️ Agent 'Route Architect': Suggest 2-3 middle stopovers.
-        2. 📅 Agent 'Itinerary Planner': Provide a detailed day-wise schedule.
-        3. 💰 Agent 'Budget & Food Expert': Estimate cost in INR and 3 local foods.
-        Language: {lang}. Use Markdown with icons.
+        Provide the response using these 3 specialized Agents:
+        1. 🕵️ Agent 'Route Architect': Suggest 2-3 mandatory middle stopovers.
+        2. 📅 Agent 'Itinerary Planner': Create a logical day-wise schedule.
+        3. 💰 Agent 'Budget & Food Expert': Estimate cost in INR and suggest 3 local dishes.
+        Language: {lang}. Format: Clean Markdown with icons.
         """
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        return f"⚠️ Error: {str(e)}"
+        return f"⚠️ Error: Please check your API Key. Details: {str(e)}"
 
 # --- 4. SESSION MANAGEMENT ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
-if 'itinerary' not in st.session_state:
-    st.session_state.itinerary = None
+if 'plan' not in st.session_state:
+    st.session_state.plan = None
 
-# --- 5. AUTHENTICATION UI (Sign In / Sign Up) ---
+# --- 5. AUTHENTICATION UI (Login / Sign Up) ---
 if not st.session_state.logged_in:
-    _, col2, _ = st.columns([1, 2, 1])
-    with col2:
+    _, center_col, _ = st.columns([0.5, 2, 0.5])
+    with center_col:
         st.markdown('<div class="auth-container">', unsafe_allow_html=True)
+        # Fixed High-Quality 3D Buddy Image
         st.markdown('<img src="https://cdn3d.iconscout.com/3d/premium/thumb/robot-saying-hello-4835150-4027063.png" class="robot-buddy">', unsafe_allow_html=True)
-        st.markdown("<h2 style='color:white;'>Welcome to Sign Up Buddy!</h2>", unsafe_allow_html=True)
         
+        st.markdown("<h2>Welcome Buddy!</h2>", unsafe_allow_html=True)
+        st.markdown("<p>Plan your luxury journey with AI</p>", unsafe_allow_html=True)
+
         mode = option_menu(None, ["Sign In", "Sign Up"], 
             icons=['fingerprint', 'person-plus'], orientation="horizontal",
-            styles={"container": {"background-color": "transparent"}, "nav-link-selected": {"background-color": "#3b82f6"}})
+            styles={
+                "container": {"background-color": "transparent"},
+                "nav-link-selected": {"background-color": "#3b82f6", "border-radius": "15px"}
+            })
 
         if mode == "Sign In":
-            st.text_input("Email", placeholder="Enter your email", key="l_email")
-            st.text_input("Password", type="password", placeholder="••••••••", key="l_pwd")
-            if st.button("LOG IN 🚀"):
+            st.text_input("Email", placeholder="buddy@example.com", key="login_email")
+            st.text_input("Password", type="password", placeholder="••••••••", key="login_pwd")
+            if st.button("Unlock Dashboard 🚀"):
                 st.session_state.logged_in = True
                 st.rerun()
         else:
             st.text_input("Full Name", placeholder="Your Name")
-            st.text_input("Email Address", placeholder="buddy@example.com")
-            st.text_input("Create Password", type="password")
-            if st.button("CREATE ACCOUNT ✨"):
-                st.success("Account Created! Please Sign In.")
+            st.text_input("Email Address")
+            st.text_input("Set Password", type="password")
+            if st.button("Start My Journey ✨"):
+                st.success("Account Ready! Now Sign In.")
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 6. MAIN DASHBOARD ---
 else:
     # Sidebar
-    st.sidebar.markdown('<img src="https://cdn3d.iconscout.com/3d/premium/thumb/robot-saying-hello-4835150-4027063.png" width="100">', unsafe_allow_html=True)
-    if st.sidebar.button("Logout 🚪"):
-        st.session_state.logged_in = False
-        st.session_state.itinerary = None
-        st.rerun()
+    with st.sidebar:
+        st.markdown('<img src="https://cdn3d.iconscout.com/3d/premium/thumb/robot-saying-hello-4835150-4027063.png" width="120">', unsafe_allow_html=True)
+        st.write("---")
+        if st.button("Sign Out 🚪"):
+            st.session_state.logged_in = False
+            st.session_state.plan = None
+            st.rerun()
 
-    st.markdown("<h1 style='text-align:center; color:white;'>🚩 YatriMate AI Buddy Dashboard</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align:center; color:white;'>🌍 YatriMate AI Buddy Dashboard</h1>", unsafe_allow_html=True)
     
-    # Input Logic
+    # Input Area
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
-        user_query = st.text_input("", placeholder="Where are we heading today? (e.g. Hyd to Varanasi)", label_visibility="collapsed")
+        u_query = st.text_input("", placeholder="ఎక్కడికి వెళ్లాలనుకుంటున్నారు? (e.g. Hyderabad to Mumbai via Pune)", label_visibility="collapsed")
         if st.button("ACTIVATE AI AGENTS 🚀"):
-            if user_query:
-                with st.status("🤖 Buddy is coordinating with Agents...", expanded=True) as s:
+            if u_query:
+                with st.status("🤖 Buddy is coordinating with Agents...", expanded=True) as status:
                     st.write("🕵️ Route Architect is mapping stops...")
                     time.sleep(1)
                     st.write("📅 Itinerary Planner is mapping days...")
-                    res = run_ai_travel_system(user_query, "Telugu & English Mix")
-                    st.session_state.itinerary = res
-                    s.update(label="Full Plan Ready!", state="complete")
+                    res = run_ai_travel_buddy(u_query, "Telugu & English Mix")
+                    st.session_state.plan = res
+                    status.update(label="Full Plan Ready!", state="complete")
 
-    # Show Results
-    if st.session_state.itinerary:
-        st.markdown(f'<div class="report-box">{st.session_state.itinerary}</div>', unsafe_allow_html=True)
-        if st.button("🔄 Plan New Journey"):
-            st.session_state.itinerary = None
+    # Display Result
+    if st.session_state.plan:
+        st.markdown(f'<div class="itinerary-box">{st.session_state.plan}</div>', unsafe_allow_html=True)
+        if st.button("🔄 Start New Plan"):
+            st.session_state.plan = None
             st.rerun()
     else:
         # Trending Section
         st.write("---")
-        st.markdown("<h3 style='text-align:center; color:white;'>🌍 Trending Now</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align:center; color:white;'>🌍 Trending Destinations</h3>", unsafe_allow_html=True)
         t_cols = st.columns(4)
         dests = [
             ("Varanasi", "https://images.unsplash.com/photo-1561361513-2d000a50f0dc?w=400"),
