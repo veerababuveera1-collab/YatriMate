@@ -3,16 +3,14 @@ import google.generativeai as genai
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="YatriMate AI - Professional Guide", 
+    page_title="YatriMate AI - Premium Cards", 
     page_icon="🚩", 
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# --- 2. THE ULTIMATE READABLE GUI (Dark Image + High Contrast Text) ---
+# --- 2. PREMIUM CARD STYLING ---
 st.markdown("""
     <style>
-    /* Background with deep dark tint for text pop */
     .stApp {
         background: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), 
                     url("https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=2000&q=80");
@@ -20,48 +18,51 @@ st.markdown("""
         background-attachment: fixed;
     }
 
-    /* 1. TOP TITLES - WHITE COLOR FOR READABILITY */
+    /* Titles */
     .header-text {
         color: #FFFFFF !important;
         text-align: center;
         text-shadow: 2px 2px 15px rgba(0,0,0,1);
         font-weight: 800;
-        margin-top: -30px;
     }
 
-    /* 2. SIDEBAR STYLING */
-    [data-testid="stSidebar"] {
-        background-color: rgba(255, 255, 255, 0.98);
-        border-right: 5px solid #FF9933;
-    }
-    
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] span {
-        color: #1A1A1A !important;
-        font-weight: 600;
-    }
-
-    /* 3. INPUT AREA - FIXED (NO EXTRA WHITE BARS) */
-    .input-container {
-        background: rgba(255, 255, 255, 0.1); /* Subtle transparent box */
-        padding: 20px;
+    /* Card Styling */
+    .info-card {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 25px;
         border-radius: 15px;
-        border: 1px solid rgba(255,255,255,0.2);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        color: #1A1A1A !important;
+        height: 100%;
+        border-top: 5px solid #FF9933;
+        transition: 0.3s;
     }
-    
-    /* 4. RESULTS BOX - PURE WHITE WITH DEEP BLACK TEXT */
+    .info-card:hover {
+        transform: translateY(-5px);
+    }
+
+    /* Input Card */
+    .input-card {
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        margin-top: 20px;
+    }
+
+    /* Result Itinerary Card */
     .itinerary-container {
         background: #FFFFFF !important; 
         padding: 40px;
-        border-radius: 15px;
-        color: #000000 !important; /* Pure black text */
+        border-radius: 20px;
+        color: #000000 !important;
         line-height: 1.8;
         font-size: 1.15rem;
         box-shadow: 0 20px 60px rgba(0,0,0,0.8);
         border-left: 10px solid #FF9933;
-        margin-top: 20px;
     }
 
-    /* 5. AGENT ANIMATIONS */
+    /* Agent Animation */
     @keyframes bounce {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-5px); }
@@ -69,27 +70,22 @@ st.markdown("""
     .agent-icon {
         display: inline-block;
         animation: bounce 1.5s infinite;
-        font-size: 1.4rem;
-        margin-right: 10px;
+        font-size: 1.8rem;
     }
 
-    /* Tables High Contrast */
-    table { width: 100%; background: white !important; color: black !important; border: 1px solid #ddd; }
-    th { background: #f0f0f0 !important; color: black !important; font-weight: bold; padding: 10px; border: 1px solid #ccc; }
-    td { border: 1px solid #eee !important; color: black !important; padding: 10px; }
+    /* Labels & Text */
+    label, p, li { color: #1A1A1A !important; font-weight: 500; }
     
-    /* Buttons */
+    /* Button Styling */
     div.stButton > button {
         background: linear-gradient(90deg, #FF9933, #FF7700) !important;
         color: white !important;
         font-weight: bold !important;
-        height: 50px;
+        height: 55px;
+        border-radius: 12px !important;
         border: none !important;
-    }
-    
-    /* Remove default white padding/bars from streamlit */
-    .block-container {
-        padding-top: 2rem !important;
+        width: 100%;
+        box-shadow: 0 4px 15px rgba(255, 153, 51, 0.4);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -98,7 +94,7 @@ st.markdown("""
 def get_gemini_model():
     api_key = st.secrets.get("GOOGLE_API_KEY")
     if not api_key:
-        st.error("API Key missing! Check secrets.")
+        st.error("API Key missing! Check Secrets.")
         return None
     genai.configure(api_key=api_key)
     return genai.GenerativeModel('gemini-3-flash-preview')
@@ -106,60 +102,80 @@ def get_gemini_model():
 if 'itinerary_data' not in st.session_state:
     st.session_state.itinerary_data = None
 
-# --- 4. SIDEBAR INSTRUCTIONS ---
-with st.sidebar:
-    st.markdown("## 📖 Instructions")
-    st.write("మీ యాత్ర వివరాలను టైప్ చేసి బటన్ నొక్కండి. నిమిషాల్లో ప్లాన్ సిద్ధమవుతుంది.")
-    
-    st.divider()
-    
-    st.markdown("## 🤖 AI Agents at Work")
+# --- 4. TOP SECTION (Header) ---
+st.markdown('<h1 class="header-text" style="font-size: 3.5rem; margin-top: -30px;">🚩 YatriMate AI</h1>', unsafe_allow_html=True)
+st.markdown('<p class="header-text" style="font-size: 1.3rem; margin-bottom: 30px;">Your Smart Multi-Agent Travel Engine</p>', unsafe_allow_html=True)
+
+# --- 5. INFO CARDS SECTION ---
+c1, c2, c3 = st.columns(3)
+
+with c1:
     st.markdown("""
-    <p><span class='agent-icon'>🗺️</span><b>Planner Agent:</b> రూట్ డిజైన్ చేస్తుంది.</p>
-    <p><span class='agent-icon'>🔍</span><b>Researcher Agent:</b> ధరలు & సమయాలు వెతుకుతుంది.</p>
-    <p><span class='agent-icon'>✍️</span><b>Writer Agent:</b> అందమైన గైడ్ రాస్తుంది.</p>
+    <div class="info-card">
+        <h3>📖 Instructions</h3>
+        <ul>
+            <li>Enter your dream destination.</li>
+            <li>Select your preferred language.</li>
+            <li>Get a detailed plan in seconds!</li>
+        </ul>
+    </div>
     """, unsafe_allow_html=True)
-    
-    st.divider()
-    if st.button("Reset Everything"):
+
+with c2:
+    st.markdown("""
+    <div class="info-card" style="text-align: center;">
+        <h3>🤖 AI Agents</h3>
+        <p><span class="agent-icon">🗺️</span> <b>Planner</b></p>
+        <p><span class="agent-icon">🔍</span> <b>Researcher</b></p>
+        <p><span class="agent-icon">✍️</span> <b>Writer</b></p>
+    </div>
+    """, unsafe_allow_html=True)
+
+with c3:
+    st.markdown('<div class="info-card">', unsafe_allow_html=True)
+    st.markdown("<h3>🌐 Language</h3>")
+    selected_lang = st.selectbox("Choose Output Language:", 
+                                ["Telugu & English (Mix)", "Pure Telugu", "English Only", "Hindi"],
+                                label_visibility="collapsed")
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("🔄 Reset App"):
         st.session_state.itinerary_data = None
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 5. UI LAYOUT ---
-st.markdown('<h1 class="header-text" style="font-size: 3.5rem;">🚩 YatriMate AI</h1>', unsafe_allow_html=True)
-st.markdown('<p class="header-text" style="font-size: 1.3rem; margin-bottom: 30px;">మీ పర్సనల్ ట్రావెల్ ఏజెంట్ - Gemini 3 Edition</p>', unsafe_allow_html=True)
+# --- 6. INPUT SECTION ---
+st.markdown('<div class="input-card">', unsafe_allow_html=True)
+user_query = st.text_input("Where do you want to go? (మీ ప్రయాణ గమ్యం):", placeholder="Ex: 5 days trip to Kashi and Ayodhya...")
+generate = st.button("Plan My Trip 🚀")
+st.markdown('</div>', unsafe_allow_html=True)
 
-col_l, col_m, col_r = st.columns([1, 2, 1])
-with col_m:
-    # Input Area - Fixed with transparent styling to avoid white bar
-    user_query = st.text_input("ప్రయాణ వివరాలు తెలపండి:", placeholder="ఉదా: 3 రోజుల అమరావతి యాత్ర ప్లాన్...")
-    generate = st.button("Generate My Itinerary 🚀")
-
-# --- 6. PROCESSING ---
+# --- 7. AGENT LOGIC ---
 if generate and user_query:
     model = get_gemini_model()
     if model:
-        with st.status("ఏజెంట్లు పనిచేస్తున్నారు...", expanded=False) as status:
-            st.write("🗺️ ప్లానర్ మార్గం వెతుకుతోంది...")
-            plan = model.generate_content(f"Create a day-wise itinerary for {user_query}").text
+        with st.status(f"Agents are coordinating in {selected_lang}...", expanded=False) as status:
+            lang_prompt = f"The final response MUST be in {selected_lang}."
             
-            st.write("🔍 రీసెర్చర్ ధరలు ధృవీకరిస్తోంది...")
-            research = model.generate_content(f"Find entry fees and timings for: {plan}").text
+            st.write("🗺️ Planner is mapping the route...")
+            plan = model.generate_content(f"Day-wise itinerary skeleton for {user_query}. {lang_prompt}").text
             
-            st.write("✍️ రైటర్ ఫైనల్ గైడ్ రాస్తోంది...")
-            final = model.generate_content(f"Create a high-quality guide with tables in Telugu and English based on this: {research}").text
+            st.write("🔍 Researcher is checking timings/fees...")
+            research = model.generate_content(f"Verify entry fees and hours for: {plan}. {lang_prompt}").text
+            
+            st.write("✍️ Writer is crafting the guide...")
+            final = model.generate_content(f"Create a professional travel guide with tables using: {research}. {lang_prompt}").text
             
             st.session_state.itinerary_data = final
-            status.update(label="ప్లాన్ సిద్ధం! ✅", state="complete")
+            status.update(label="Itinerary Ready! ✅", state="complete")
 
-# --- 7. RESULTS ---
+# --- 8. RESULTS DISPLAY ---
 if st.session_state.itinerary_data:
     st.markdown("<br>", unsafe_allow_html=True)
-    # This is the clear container with black text
-    st.markdown(f'<div class="itinerary-container">', unsafe_allow_html=True)
+    st.markdown('<div class="itinerary-container">', unsafe_allow_html=True)
     st.markdown(st.session_state.itinerary_data)
     st.markdown('</div>', unsafe_allow_html=True)
     
-    st.download_button("Download Full Guide 📥", st.session_state.itinerary_data, file_name="My_Travel_Plan.md")
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.download_button("Download Full Itinerary 📥", st.session_state.itinerary_data, file_name="YatriMate_Itinerary.md")
 
-st.markdown("<br><p style='text-align: center; color: white; opacity: 0.6;'>YatriMate AI © 2026</p>", unsafe_allow_html=True)
+st.markdown("<br><p style='text-align: center; color: white; opacity: 0.6;'>YatriMate AI © 2026 | Powered by Gemini 3 Flash</p>", unsafe_allow_html=True)
