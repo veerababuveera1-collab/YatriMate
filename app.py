@@ -9,10 +9,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. THE ULTIMATE READABLE GUI (Dark Image + High Contrast Text) ---
+# --- 2. THE ULTIMATE READABLE GUI ---
 st.markdown("""
     <style>
-    /* Background with deep dark tint for text pop */
     .stApp {
         background: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), 
                     url("https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=2000&q=80");
@@ -20,7 +19,6 @@ st.markdown("""
         background-attachment: fixed;
     }
 
-    /* 1. TOP TITLES - WHITE COLOR FOR READABILITY */
     .header-text {
         color: #FFFFFF !important;
         text-align: center;
@@ -29,7 +27,6 @@ st.markdown("""
         margin-top: -30px;
     }
 
-    /* 2. SIDEBAR STYLING */
     [data-testid="stSidebar"] {
         background-color: rgba(255, 255, 255, 0.98);
         border-right: 5px solid #FF9933;
@@ -40,20 +37,11 @@ st.markdown("""
         font-weight: 600;
     }
 
-    /* 3. INPUT AREA - FIXED (NO EXTRA WHITE BARS) */
-    .input-container {
-        background: rgba(255, 255, 255, 0.1); /* Subtle transparent box */
-        padding: 20px;
-        border-radius: 15px;
-        border: 1px solid rgba(255,255,255,0.2);
-    }
-    
-    /* 4. RESULTS BOX - PURE WHITE WITH DEEP BLACK TEXT */
     .itinerary-container {
         background: #FFFFFF !important; 
         padding: 40px;
         border-radius: 15px;
-        color: #000000 !important; /* Pure black text */
+        color: #000000 !important;
         line-height: 1.8;
         font-size: 1.15rem;
         box-shadow: 0 20px 60px rgba(0,0,0,0.8);
@@ -61,7 +49,6 @@ st.markdown("""
         margin-top: 20px;
     }
 
-    /* 5. AGENT ANIMATIONS */
     @keyframes bounce {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-5px); }
@@ -73,21 +60,19 @@ st.markdown("""
         margin-right: 10px;
     }
 
-    /* Tables High Contrast */
     table { width: 100%; background: white !important; color: black !important; border: 1px solid #ddd; }
     th { background: #f0f0f0 !important; color: black !important; font-weight: bold; padding: 10px; border: 1px solid #ccc; }
     td { border: 1px solid #eee !important; color: black !important; padding: 10px; }
     
-    /* Buttons */
     div.stButton > button {
         background: linear-gradient(90deg, #FF9933, #FF7700) !important;
         color: white !important;
         font-weight: bold !important;
         height: 50px;
         border: none !important;
+        width: 100%;
     }
     
-    /* Remove default white padding/bars from streamlit */
     .block-container {
         padding-top: 2rem !important;
     }
@@ -101,13 +86,24 @@ def get_gemini_model():
         st.error("API Key missing! Check secrets.")
         return None
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel('gemini-3-flash-preview')
+    # Using stable flash model
+    return genai.GenerativeModel('gemini-1.5-flash')
 
 if 'itinerary_data' not in st.session_state:
     st.session_state.itinerary_data = None
 
-# --- 4. SIDEBAR INSTRUCTIONS ---
+# --- 4. SIDEBAR INSTRUCTIONS & SETTINGS ---
 with st.sidebar:
+    st.markdown("## 🌐 Language Settings")
+    # భాషను ఎంచుకోవడానికి డ్రాప్‌డౌన్
+    selected_lang = st.selectbox(
+        "Choose Output Language:",
+        ["Telugu & English (Mix)", "Pure Telugu", "English Only", "Hindi"],
+        index=0
+    )
+    
+    st.divider()
+    
     st.markdown("## 📖 Instructions")
     st.write("మీ యాత్ర వివరాలను టైప్ చేసి బటన్ నొక్కండి. నిమిషాల్లో ప్లాన్ సిద్ధమవుతుంది.")
     
@@ -127,11 +123,11 @@ with st.sidebar:
 
 # --- 5. UI LAYOUT ---
 st.markdown('<h1 class="header-text" style="font-size: 3.5rem;">🚩 YatriMate AI</h1>', unsafe_allow_html=True)
-st.markdown('<p class="header-text" style="font-size: 1.3rem; margin-bottom: 30px;">మీ పర్సనల్ ట్రావెల్ ఏజెంట్ - Gemini 3 Edition</p>', unsafe_allow_html=True)
+# "Gemini 3 Edition" తొలగించబడింది
+st.markdown('<p class="header-text" style="font-size: 1.3rem; margin-bottom: 30px;">మీ పర్సనల్ ట్రావెల్ ఏజెంట్</p>', unsafe_allow_html=True)
 
 col_l, col_m, col_r = st.columns([1, 2, 1])
 with col_m:
-    # Input Area - Fixed with transparent styling to avoid white bar
     user_query = st.text_input("ప్రయాణ వివరాలు తెలపండి:", placeholder="ఉదా: 3 రోజుల అమరావతి యాత్ర ప్లాన్...")
     generate = st.button("Generate My Itinerary 🚀")
 
@@ -139,15 +135,18 @@ with col_m:
 if generate and user_query:
     model = get_gemini_model()
     if model:
-        with st.status("ఏజెంట్లు పనిచేస్తున్నారు...", expanded=False) as status:
+        with st.status(f"ఏజెంట్లు పనిచేస్తున్నారు... ({selected_lang})", expanded=False) as status:
+            # ఎంచుకున్న భాషను ప్రాంప్ట్‌కు జత చేయడం
+            lang_instruction = f"The final response MUST be in {selected_lang}."
+            
             st.write("🗺️ ప్లానర్ మార్గం వెతుకుతోంది...")
-            plan = model.generate_content(f"Create a day-wise itinerary for {user_query}").text
+            plan = model.generate_content(f"Create a day-wise itinerary for {user_query}. {lang_instruction}").text
             
             st.write("🔍 రీసెర్చర్ ధరలు ధృవీకరిస్తోంది...")
-            research = model.generate_content(f"Find entry fees and timings for: {plan}").text
+            research = model.generate_content(f"Find entry fees and timings for: {plan}. {lang_instruction}").text
             
             st.write("✍️ రైటర్ ఫైనల్ గైడ్ రాస్తోంది...")
-            final = model.generate_content(f"Create a high-quality guide with tables in Telugu and English based on this: {research}").text
+            final = model.generate_content(f"Create a high-quality guide with tables based on this: {research}. {lang_instruction}").text
             
             st.session_state.itinerary_data = final
             status.update(label="ప్లాన్ సిద్ధం! ✅", state="complete")
@@ -155,7 +154,6 @@ if generate and user_query:
 # --- 7. RESULTS ---
 if st.session_state.itinerary_data:
     st.markdown("<br>", unsafe_allow_html=True)
-    # This is the clear container with black text
     st.markdown(f'<div class="itinerary-container">', unsafe_allow_html=True)
     st.markdown(st.session_state.itinerary_data)
     st.markdown('</div>', unsafe_allow_html=True)
